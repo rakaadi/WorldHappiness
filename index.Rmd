@@ -1,0 +1,323 @@
+---
+title: "World Happiness"
+author: "[Raka Adinugraha](https://github.com/rakaadi) - `r format(Sys.time(), '%d %B %Y')`"
+output:
+  epuRate::epurate:
+    toc: FALSE
+    number_sections: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(epuRate)
+library(rmarkdown)
+```
+
+> In this project, we will perform [data wrangling](https://en.wikipedia.org/wiki/Data_wrangling) and tidying several datasets. The purpose is to make the datasets more suitable to joining, and make it easier to use for further process like analytics among others. The github repositories for this project is [here](https://github.com/rakaadi/WorldHappiness)
+
+```{r, include=FALSE}
+library(dplyr)
+library(readr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(DT)
+```
+
+# The Datasets{.tabset .tabset-fade .tabset-pills}
+***
+We use the World Happiness Report datasets that can be accessed [here](https://www.kaggle.com/unsdsn/world-happiness), the reports review the state of happiness in the world today and show the new science of happiness explains personal and national variations in happiness. This report issued by [United Nations Sustainable Development Solutions Network](https://www.unsdsn.org/). At the time of writing this markdown, datasets from 2015-2019 are available. And by any reason you interested more about the reports, you can read it [here](https://resources.unsdsn.org/happiness7753ddc5) for more detail.
+
+Now, lets take a look at the datasets. While we read the csv file, we also edit Some of its column name and also make new 'Year' column in the respective report datasets. 
+
+```{r, include=FALSE}
+read_csv("2015.csv") %>%
+  rename_all(~ str_replace_all(., " ", "")) %>%
+  mutate(Year = parse_number('2015')) -> hap_2015
+
+read_csv("2016.csv") %>%
+  rename_all(~ str_replace_all(., " ", "")) %>%
+  mutate(Year = parse_number('2016')) -> hap_2016
+
+read_csv("2017.csv") %>%
+  mutate(Year = parse_number('2017')) -> hap_2017
+
+read_csv("2018.csv") %>%
+  rename(Country = 'Country or region') %>%
+  na_if("N/A") %>%
+  rename_all(~ str_replace_all(., " ", "")) %>%
+  mutate(Year = parse_number('2018')) -> hap_2018
+
+parse_number(hap_2018$Perceptionsofcorruption) -> 
+  hap_2018$Perceptionsofcorruption
+
+read_csv("2019.csv") %>%
+  rename(Country = 'Country or region') %>%
+  rename_all(~ str_replace_all(., " ", "")) %>%
+  mutate(Year = parse_number('2019')) -> hap_2019
+```
+
+
+## 2015
+2015 World Happiness Report
+```{r}
+## 2015
+datatable(hap_2015, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) 
+```
+
+## 2016
+2016 World Happiness Report
+```{r}
+## 2016
+datatable(hap_2016, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #2
+```
+
+## 2017
+2017 World Happiness Report
+```{r}
+datatable(hap_2017, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #3
+```
+
+## 2018
+2018 World Happiness Report
+```{r}
+datatable(hap_2018, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #4
+```
+
+## 2019
+2019 World Happiness Report
+```{r}
+datatable(hap_2019, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #5
+```
+
+# Adding Region and Reordering{.tabset .tabset-fade .tabset-pills}
+***
+
+As we can see, some of the datasets have some difference between them. Now lets take care of it, so the datasets can be easily joined later. 
+
+First, we add 'Region' column to 2017-2018 datasets. Because initialy only 2015 and 2016 has the 'Region' column. So we create a new dataframe called Region taken from 2016 datasets. This new datasets will be used as the bases table to add 'Region' to the afromentioned datafsets that doesn't have 'Region' column.
+
+```{r}
+hap_2016 %>%
+  transmute(Country, Region) %>%
+  arrange(Country) -> Region
+
+datatable(Region, rownames = FALSE, filter = "top", options = list(pageLength = 6)) #5
+```
+
+<br>
+
+At the same time we also reorder some of the column on all datasets, so they are all in the same order. And now lets take a look again at the datasets. 
+
+```{r, include=FALSE}
+hap_2019 %>%
+  arrange(Country) %>%
+  .[c(10, 1:9)] %>%
+  full_join(., Region, by = "Country") %>%
+  .[c(1, 3, 11, 2, 4:10)] -> hap_2019
+
+hap_2018 %>%
+  arrange(Country) %>%
+  .[c(10, 1:9)] %>%
+  full_join(., Region, by = "Country")  %>%
+  .[c(1, 3, 11, 2, 4:10)] -> hap_2018
+
+hap_2017 %>%
+  arrange(Country) %>%
+  .[c(13, 1:12)] %>%
+  full_join(., Region, by = "Country") %>%
+  .[c(1, 2, 14, 3:13)] -> hap_2017
+
+hap_2016 %>%
+  .[c(14, 1:13)] -> hap_2016
+
+hap_2015 %>%
+  .[c(13, 1:12)] -> hap_2015
+```
+
+## 2015
+2015 World Happiness Report
+```{r}
+## 2015
+datatable(hap_2015, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) 
+```
+
+## 2016
+2016 World Happiness Report
+```{r}
+## 2016
+datatable(hap_2016, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #2
+```
+
+## 2017
+2017 World Happiness Report
+```{r}
+datatable(hap_2017, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #3
+```
+
+## 2018
+2018 World Happiness Report
+```{r}
+datatable(hap_2018, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #4
+```
+
+## 2019
+2019 World Happiness Report
+```{r}
+datatable(hap_2019, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #5
+```
+
+# The NAs
+***
+After we added new 'Region' column to three datasets (2017, 2018, 2019) it is kind of expected that it will result some new data have NA values, because all the datasets have difference either in its value or variable. 
+
+for example, "Hong kong" in 2018 and 2019 datasets was named as "Hong Kong S.A.R., China" in 2017 datasets. There is also some others country that happen to be named this way accross the datasets. This different naming scheme in some datasets will cause some value will have its variable valued as NA, after we join the table to make new 'Region' column. In order to solve this, we compare each data to see which country have their region value as NA. And we will the drop the rows that have their happiness score as NA. Also, we will change some country that have different name, so it match accross the board.
+
+```{r, include=FALSE}
+hap_2017 %>%
+  drop_na(Happiness.Rank) %>%
+  mutate(Region = case_when(
+    Country == "Central African Republic" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "Hong Kong S.A.R., China" & is.na(Region) ~ "Eastern Asia",
+    Country == "Lesotho" & is.na(Region) ~ "Sub-Saharan Africa", 
+    Country == "Mozambique" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "Taiwan Province of China" & is.na(Region) ~ "Eastern Asia",
+    TRUE ~ Region
+  )) -> hap_2017
+
+hap_2018 %>%
+  drop_na(Overallrank) %>%
+  mutate(Region = case_when(
+    Country == "Central African Republic" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "Lesotho" & is.na(Region) ~ "Sub-Saharan Africa", 
+    Country == "Mozambique" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "Northern Cyprus" & is.na(Region) ~ "Western Europe",
+    Country == "Trinidad & Tobago" & is.na(Region) ~ "Latin America and Caribbean",
+    TRUE ~ Region
+  )) -> hap_2018
+
+hap_2019 %>%
+  drop_na(Overallrank) %>%
+  mutate(Region = case_when(
+    Country == "Central African Republic" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "Gambia" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "Lesotho" & is.na(Region) ~ "Sub-Saharan Africa", 
+    Country == "Mozambique" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "North Macedonia" & is.na(Region) ~ "Central and Eastern Europe",
+    Country == "Northern Cyprus" & is.na(Region) ~ "Western Europe",
+    Country == "Swaziland" & is.na(Region) ~ "Sub-Saharan Africa",
+    Country == "Trinidad & Tobago" & is.na(Region) ~ "Latin America and Caribbean",
+    TRUE ~ Region
+  )) -> hap_2019
+```
+
+There is still one other NA, the code below will show where it is. 
+
+```{r, }
+which(is.na(hap_2018), arr.ind=TRUE)
+hap_2018[147, ]
+```
+
+The result show it was on the 2018 dataset, row number 20, column 9. Which is the "United Arab Emirates" Perceptions of corruption column value. We will not drop this row, because it still contains other valuable variable. We also not gonna change it to 0, because if we take a look at 2015 dataset we will find "Indonesia" perceptions of corruption valued as 0. So, we will leave it as is.
+
+And we gonna drop some column in 2015, 2016, 2017 dataset. Because the dropped column doesn't not have counterpart in 2018 and 2019 dataset.
+
+```{r}
+hap_2017 %>%
+  select(-c(Whisker.high, Whisker.low, Dystopia.Residual)) -> hap_2017
+
+hap_2016 %>%
+  select(-c(LowerConfidenceInterval, UpperConfidenceInterval, DystopiaResidual)) -> hap_2016
+
+hap_2015 %>%
+  select(-c(StandardError, DystopiaResidual)) -> hap_2015
+```
+
+# Renaming Column{.tabset .tabset-fade .tabset-pills}
+***
+
+After we finish with the NA values, its time to renaming almost all of the datasets. We will take the 2015 datasets as the basis for column naming scheme on all datasets. Before that, we also renamed two column in 2015 datasets to match two column name in 2019 dataset, which is "Social Support" and "Perceptions of Corruption". 
+
+```{r}
+hap_2015 %>%
+  .[c(1:9, 11, 10)] -> hap_2015
+
+hap_2016 %>%
+  .[c(1:9, 11, 10)] -> hap_2016
+
+hap_2015 %>%
+  rename(SocialSupport = "Family") %>%
+  rename(PerceptionsofCorruption = "Trust(GovernmentCorruption)")-> hap_2015
+
+hap_2016 %>%
+  rename_all(., ~ colnames(hap_2015)) -> hap_2016
+
+hap_2017 %>%
+  rename_all(., ~ colnames(hap_2015)) -> hap_2017
+
+hap_2018 %>%
+  rename_all(., ~ colnames(hap_2015)) -> hap_2018
+
+hap_2019 %>%
+  rename_all(., ~ colnames(hap_2015)) -> hap_2019
+```
+
+This is how each dataset looks like until now:
+
+## 2015
+2015 World Happiness Report
+```{r}
+## 2015
+datatable(hap_2015, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) 
+```
+
+## 2016
+2016 World Happiness Report
+```{r}
+## 2016
+datatable(hap_2016, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #2
+```
+
+## 2017
+2017 World Happiness Report
+```{r}
+datatable(hap_2017, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #3
+```
+
+## 2018
+2018 World Happiness Report
+```{r,}
+datatable(hap_2018, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #4
+```
+
+## 2019
+2019 World Happiness Report
+```{r}
+datatable(hap_2019, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T)) #5
+```
+
+# Join
+***
+Now lets join all the dataset together so it all the value placed in a single dataset. 
+
+```{r}
+bind_rows(hap_2015, hap_2016, hap_2017, hap_2018, hap_2019) -> happiness
+
+datatable(happiness, rownames = FALSE, filter = "top", options = list(pageLength = 6, scrollX=T))
+```
+
+# TODO Next
+***
+Here what we planned to do next with this dataset.
+
+<style>
+div.grey { background-color:#f5f5f5; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "grey">
+
+- Maintain the dataset. When new happiness report issued, join the new dataset to this existing dataset.
+- Improve this markdown. Add more data visualization, and improve presentation in general.
+- Do further analysis on the happiness dataset. It can reveal a lot more interesting information from this data.
+- Make dashboard for this dataset.
+
+</div>
